@@ -14,15 +14,16 @@ bodies.forEach(function (body) {
   tree.insert(body);
 });
 
+tree.updateForces();
+
 bodies.forEach(function (body, i) {
-  tree.updateForce(body);
   console.log(i, body.fx, body.fy);
 });
 
 function createBodies(n) {
   var bodies = [];
   for (var i = 0; i < n; ++i) {
-    bodies.push({ x: Math.random() * 100, y: Math.random() * 100, mass: Math.random * 78 });
+    bodies.push({ x: Math.random() * 100, y: Math.random() * 100, mass: Math.random() * 78 });
   }
   return bodies;
 }
