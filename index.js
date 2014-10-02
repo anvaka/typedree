@@ -1,3 +1,15 @@
+//0 - bodyid
+//1 - mass
+//2 - massx
+//3 - massy
+//4 - left
+//5 - righ
+//6 - top
+//7 - bottom
+//8 - quad 0
+//9 - quad 1
+//10 - quad 2
+//11 - quad 3
 module.exports = createQuadTree;
 
 function createQuadTree(bounds) {
