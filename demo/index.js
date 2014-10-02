@@ -8,22 +8,28 @@ var bounds = {
 };
 
 var tree = createQuadTree(bounds);
-var bodies = createBodies(2);
+var bodies = createBodies(300);
 
-bodies.forEach(function (body) {
+bodies.forEach(function(body) {
   tree.insert(body);
 });
 
 tree.updateForces();
 
-bodies.forEach(function (body, i) {
+bodies.forEach(function(body, i) {
   console.log(i, body.fx, body.fy);
 });
 
 function createBodies(n) {
   var bodies = [];
   for (var i = 0; i < n; ++i) {
-    bodies.push({ x: Math.random() * 100, y: Math.random() * 100, mass: Math.random() * 78 });
+    bodies.push({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      mass: Math.random() * 78,
+      fx : 0,
+      fy: 0
+    });
   }
   return bodies;
 }

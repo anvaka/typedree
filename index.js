@@ -3,8 +3,10 @@ module.exports = createQuadTree;
 function createQuadTree(bounds) {
   var ELEMENTS_PER_NODE = 12;
   var bodies = [],
+    gravity = -1,
+    theta = 0.8,
     lastChildIdx = 0,
-    tree = new Float64Array(2048);
+    tree = new Float64Array(100000 * ELEMENTS_PER_NODE);
 
   tree[4] = bounds.x;
   tree[5] = bounds.x + bounds.width;
@@ -30,7 +32,80 @@ function createQuadTree(bounds) {
   }
 
   function updateForces() {
+    bodies.forEach(function(body, idx) {
+      updateBodyForces(idx + 1, 0);
+    });
+  }
 
+  function updateBodyForces(sourceBodyId, offset) {
+    var dx, dy, r, v;
+    var sourceBody, body;
+
+    var bodyId = tree[offset];
+    if (bodyId && bodyId !== sourceBodyId) {
+      body = bodies[bodyId - 1];
+      sourceBody = bodies[sourceBodyId - 1];
+      // If the current node is a leaf node (and it is not source body),
+      // calculate the force exerted by the current node on body, and add this
+      // amount to body's net force.
+      dx = body.x - sourceBody.x;
+      dy = body.y - sourceBody.y;
+      r = Math.sqrt(dx * dx + dy * dy);
+
+      if (r === 0) {
+        // Poor man's protection against zero distance.
+        dx = (Math.random() - 0.5) / 50;
+        dy = (Math.random() - 0.5) / 50;
+        r = Math.sqrt(dx * dx + dy * dy);
+      }
+
+      // This is standard gravition force calculation but we divide
+      // by r^3 to save two operations when normalizing force vector.
+      v = gravity * body.mass * sourceBody.mass / (r * r * r);
+      sourceBody.fx += v * dx;
+      sourceBody.fy += v * dy;
+    } else {
+      // Otherwise, calculate the ratio s / r,  where s is the width of the region
+      // represented by the internal node, and r is the distance between the body
+      // and the node's center-of-mass
+      sourceBody = bodies[sourceBodyId - 1];
+      dx = tree[offset + 2]/ tree[offset + 1] - sourceBody.x;
+      dy = tree[offset + 3]/ tree[offset + 1] - sourceBody.y;
+      r = Math.sqrt(dx * dx + dy * dy);
+
+      if (r === 0) {
+        // Sorry about code duplucation. I don't want to create many functions
+        // right away. Just want to see performance first.
+        dx = (random.nextDouble() - 0.5) / 50;
+        dy = (random.nextDouble() - 0.5) / 50;
+        r = Math.sqrt(dx * dx + dy * dy);
+      }
+      // If s / r < θ, treat this internal node as a single body, and calculate the
+      // force it exerts on sourceBody, and add this amount to sourceBody's net force.
+      if ((tree[offset + 5] - tree[offset + 4]) / r < theta) {
+        // in the if statement above we consider node's width only
+        // because the region was squarified during tree creation.
+        // Thus there is no difference between using width or height.
+        v = gravity * tree[offset + 1] * sourceBody.mass / (r * r * r);
+        sourceBody.fx += v * dx;
+        sourceBody.fy += v * dy;
+      } else {
+        // Otherwise, run the procedure recursively on each of the current node's children.
+        // I intentionally unfolded this loop, to save several CPU cycles.
+        if (tree[offset + 8]) {
+          updateBodyForces(sourceBodyId, tree[offset + 8]);
+        }
+        if (tree[offset + 9]) {
+          updateBodyForces(sourceBodyId, tree[offset + 9]);
+        }
+        if (tree[offset + 10]) {
+          updateBodyForces(sourceBodyId, tree[offset + 10]);
+        }
+        if (tree[offset + 11]) {
+          updateBodyForces(sourceBodyId, tree[offset + 11]);
+        }
+      }
+    }
   }
 
   function insertRaw(x, y, mass, body, offset) {
@@ -65,7 +140,7 @@ function createQuadTree(bounds) {
         return;
       }
       do {
-        var bump  = Math.random(); // todo: should be deterministic
+        var bump = Math.random(); // todo: should be deterministic
         var dx = (right - left) * bump;
         var dy = (bottom - top) * bump;
 
