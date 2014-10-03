@@ -1,0 +1,5 @@
+Bodies #10000
+Base case x 3.50 ops/sec ±1.55% (13 runs sampled)
+
+Note: This is extremely ineficient, compared to regular quad tree:
+https://github.com/anvaka/ngraph.quadtreebh/blob/master/perf/perfresults.txt
