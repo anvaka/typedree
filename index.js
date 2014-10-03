@@ -12,22 +12,28 @@
 //11 - quad 3
 module.exports = createQuadTree;
 
+var insertDepth = 0;
+var maxDepth = 0;
+
 function createQuadTree(bounds) {
   var ELEMENTS_PER_NODE = 12;
   var bodies = [],
     gravity = -1,
     theta = 0.8,
     lastChildIdx = 0,
-    tree = new Float64Array(100000 * ELEMENTS_PER_NODE);
+    tree = new Float64Array(200000 * ELEMENTS_PER_NODE);
 
   tree[4] = bounds.x;
   tree[5] = bounds.x + bounds.width;
   tree[6] = bounds.y;
-  tree[7] = bounds.y + bounds.top;
+  tree[7] = bounds.y + bounds.height;
 
   return {
     insert: insertBody,
-    updateForces: updateForces
+    updateForces: updateForces,
+    getMaxDepth: function() {
+      return maxDepth;
+    }
   };
 
   function insertBody(body) {
@@ -81,8 +87,8 @@ function createQuadTree(bounds) {
       // represented by the internal node, and r is the distance between the body
       // and the node's center-of-mass
       sourceBody = bodies[sourceBodyId - 1];
-      dx = tree[offset + 2]/ tree[offset + 1] - sourceBody.x;
-      dy = tree[offset + 3]/ tree[offset + 1] - sourceBody.y;
+      dx = tree[offset + 2] / tree[offset + 1] - sourceBody.x;
+      dy = tree[offset + 3] / tree[offset + 1] - sourceBody.y;
       r = Math.sqrt(dx * dx + dy * dy);
 
       if (r === 0) {
@@ -121,12 +127,18 @@ function createQuadTree(bounds) {
   }
 
   function insertRaw(x, y, mass, body, offset) {
+    insertDepth += 1;
+    if (insertDepth > maxDepth) {
+      maxDepth = insertDepth;
+    }
     // start with root:
     var oldBody = tree[offset];
     if (oldBody === 0) {
       insertInternalNode(x, y, mass, body, offset);
+      insertDepth -= 1;
     } else {
       insertLeafNode(x, y, mass, body, offset, oldBody);
+      insertDepth -= 1;
     }
   }
 
@@ -144,6 +156,7 @@ function createQuadTree(bounds) {
       var top = tree[offset + 6];
       var bottom = tree[offset + 7];
 
+      console.log('same pos!', oldBody, body);
       if (right - left < 1e-8) {
         // This is very bad, we ran out of precision.
         // if we do not return from the method we'll get into
@@ -214,6 +227,10 @@ function createQuadTree(bounds) {
   function isSamePosition(body1, body2) {
     var point1 = bodies[body1 - 1];
     var point2 = bodies[body2 - 1];
+    if (!point1) {
+      console.log(body1, body1);
+      throw new Error('1!')
+    }
 
     var dx = Math.abs(point1.x - point2.x);
     var dy = Math.abs(point1.y - point2.y);
